@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Smart Tally - Password Reset">
+    <title>Smart Tally - Opening App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status {
+            font-size: 18px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .manual-link {
+            display: none;
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .manual-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .manual-link.show {
+            display: inline-block;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .error {
+            color: #ffeb3b;
+            font-size: 16px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 235, 59, 0.1);
+            border-radius: 10px;
+        }
+        .info {
+            font-size: 13px;
+            opacity: 0.7;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+        .debug {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            font-size: 11px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💰</div>
+        <h1>Smart Tally</h1>
+        <div class="subtitle">Budget Tracker App</div>
+        <div class="spinner" id="spinner"></div>
+        <div class="status" id="status">Opening app...</div>
+        <a href="#" class="manual-link" id="manualLink">
+            🚀 Open Smart Tally
+        </a>
+        <div class="info" id="info"></div>
+        <div class="debug" id="debug"></div>
+    </div>
+
+    <script>
+        (function() {
+            const statusEl = document.getElementById('status');
+            const spinnerEl = document.getElementById('spinner');
+            const manualLinkEl = document.getElementById('manualLink');
+            const infoEl = document.getElementById('info');
+            const debugEl = document.getElementById('debug');
+            
+            let debugLog = [];
+            function log(msg) {
+                console.log(msg);
+                debugLog.push(msg);
+                debugEl.innerHTML = debugLog.join('<br>');
+            }
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            const oobCode = urlParams.get('oobCode');
+            const apiKey = urlParams.get('apiKey');
+            const continueUrl = urlParams.get('continueUrl');
+            const lang = urlParams.get('lang') || 'en';
+            
+            log('=== Smart Tally Redirect ===');
+            log('Mode: ' + mode);
+            log('OobCode: ' + (oobCode ? oobCode.substring(0, 10) + '...' : 'null'));
+            
+            document.body.addEventListener('dblclick', function() {
+                debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            if (!mode || !oobCode) {
+                statusEl.textContent = '❌ Invalid Link';
+                statusEl.className = 'status error';
+                spinnerEl.style.display = 'none';
+                infoEl.innerHTML = 'This reset link is invalid or has expired.<br>Please request a new password reset from the app.';
+                log('ERROR: Missing required parameters');
+                return;
+            }
+            
+            let appUrl = `tally://reset?mode=${encodeURIComponent(mode)}&oobCode=${encodeURIComponent(oobCode)}`;
+            
+            if (apiKey) appUrl += `&apiKey=${encodeURIComponent(apiKey)}`;
+            if (continueUrl) appUrl += `&continueUrl=${encodeURIComponent(continueUrl)}`;
+            if (lang) appUrl += `&lang=${encodeURIComponent(lang)}`;
+            
+            log('App URL: ' + appUrl);
+            
+            manualLinkEl.href = appUrl;
+            
+            let appOpened = false;
+            
+            try {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = appUrl;
+                document.body.appendChild(iframe);
+                log('Iframe created');
+                
+                setTimeout(function() {
+                    if (!appOpened) {
+                        window.location.href = appUrl;
+                        log('Location changed');
+                    }
+                }, 100);
+                
+            } catch (error) {
+                log('ERROR: ' + error.message);
+                statusEl.textContent = '⚠️ Unable to open app automatically';
+                statusEl.className = 'status error';
+            }
+            
+            setTimeout(function() {
+                if (!appOpened) {
+                    spinnerEl.style.display = 'none';
+                    statusEl.textContent = "App didn't open?";
+                    manualLinkEl.classList.add('show');
+                    infoEl.innerHTML = 'Make sure <strong>Smart Tally</strong> app is installed on your device.<br><br>Tap the button above to try again.';
+                    log('Showing manual link');
+                }
+            }, 2500);
+            
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    appOpened = true;
+                    log('SUCCESS: App opened');
+                }
+            });
+            
+            window.addEventListener('blur', function() {
+                appOpened = true;
+                log('SUCCESS: App opened');
+            });
+            
+        })();
+    </script>
+</body>
+</html>
